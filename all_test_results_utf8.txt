@@ -1,0 +1,269 @@
+﻿
+   PASS  Tests\Unit\ExampleTest
+  Γ£ô that trueΓÇª  0.01s  
+
+   PASS  Tests\Feature\AuthTest
+  Γ£ô unauthentiΓÇª 0.48s  
+  Γ£ô authenticaΓÇª 0.06s  
+  Γ£ô login screΓÇª 0.04s  
+  Γ£ô user can lΓÇª 0.05s  
+  Γ£ô user cannoΓÇª 0.24s  
+
+   FAIL  Tests\Feature\CreditTest
+  Γ¿» can issueΓÇª  0.10s  
+  Γ¿» cannot excΓÇª 0.04s  
+  Γ¿» can recordΓÇª 0.02s  
+
+   FAIL  Tests\Feature\CustomerRegistrationTest
+  Γ£ô registratiΓÇª 0.03s  
+  Γ¿» new customΓÇª 0.05s  
+  Γ£ô customer cΓÇª 0.03s  
+  Γ£ô customer cΓÇª 0.04s  
+  Γ£ô customer cΓÇª 0.04s  
+  Γ£ô customer cΓÇª 0.24s  
+
+   FAIL  Tests\Feature\CustomerTest
+  Γ¿» can view cΓÇª 0.07s  
+  Γ¿» can createΓÇª 0.06s  
+  Γ¿» cannot creΓÇª 0.05s  
+
+   FAIL  Tests\Feature\DashboardTest
+  Γ¿» dashboardΓÇª  0.03s  
+
+   PASS  Tests\Feature\ExampleTest
+  Γ£ô the applicΓÇª 0.02s  
+
+   PASS  Tests\Feature\PortalAuthTest
+  Γ£ô unauthentiΓÇª 0.02s  
+  Γ£ô customer lΓÇª 0.03s  
+  Γ£ô customer cΓÇª 0.03s  
+  Γ£ô customer cΓÇª 0.03s  
+  Γ£ô customer cΓÇª 0.03s  
+  Γ£ô authenticaΓÇª 0.03s  
+  Γ£ô authenticaΓÇª 0.02s  
+
+   FAIL  Tests\Feature\PortalTest
+  Γ£ô portal logΓÇª 0.03s  
+  Γ£ô customer cΓÇª 0.02s  
+  Γ£ô cannot logΓÇª 0.02s  
+  Γ£ô dashboardΓÇª  0.03s  
+  Γ£ô guest cannΓÇª 0.02s  
+  Γ¿» logout      0.02s  
+
+   FAIL  Tests\Feature\TrustScoreTest
+  Γ¿» trust scorΓÇª 0.03s  
+  Γ¿» trust scorΓÇª 0.02s  
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Failed asserting that a row in the table [credits] matches the attributes {
+    "customer_id": 1,
+    "amount": 5000,
+    "status": "active"
+}.
+
+The table is empty.
+
+  at tests\Feature\CreditTest.php:32
+     28Γûò         ]);
+     29Γûò 
+     30Γûò         $response->assertSessionHasNoErrors();
+     31Γûò 
+  Γ₧£  32Γûò         $this->assertDatabaseHas('credits', [
+     33Γûò             'customer_id' => $customer->id,
+     34Γûò             'amount' => 5000,
+     35Γûò             'status' => 'active',
+     36Γûò         ]);
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Session is missing expected key [errors].
+Failed asserting that false is true.
+
+  at tests\Feature\CreditTest.php:60
+     56Γûò             'type' => 'cash',
+     57Γûò             'due_date' => now()->addDays(30)->toDateString(),
+     58Γûò         ]);
+     59Γûò 
+  Γ₧£  60Γûò         $response->assertSessionHasErrors('amount'); // Should ensure limitation
+     61Γûò         $this->assertDatabaseCount('credits', 0);
+     62Γûò     }
+     63Γûò 
+     64Γûò     public function test_can_record_payment_and_close_credit()
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Failed asserting that a row in the table [payments] matches the attributes {
+    "credit_id": 1,
+    "amount_paid": 3000
+}.
+
+The table is empty.
+
+  at tests\Feature\CreditTest.php:89
+     85Γûò         ]);
+     86Γûò 
+     87Γûò         $response->assertSessionHasNoErrors();
+     88Γûò 
+  Γ₧£  89Γûò         $this->assertDatabaseHas('payments', [
+     90Γûò             'credit_id' => $credit->id,
+     91Γûò             'amount_paid' => 3000,
+     92Γûò         ]);
+     93Γûò
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Failed asserting that a row in the table [customers] matches the attributes {
+    "email": "customer@example.com",
+    "phone": "0712345678"
+}.
+
+The table is empty.
+
+  at tests\Feature\CustomerRegistrationTest.php:30
+     26Γûò             'password' => 'Password123',
+     27Γûò             'password_confirmation' => 'Password123',
+     28Γûò         ]);
+     29Γûò 
+  Γ₧£  30Γûò         $this->assertDatabaseHas('customers', [
+     31Γûò             'email' => 'customer@example.com',
+     32Γûò             'phone' => '0712345678',
+     33Γûò         ]);
+     34Γûò
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Expected response status code [200] but received 404.
+Failed asserting that 404 is identical to 200.
+
+  at tests\Feature\CustomerTest.php:16
+     12Γûò 
+     13Γûò     public function test_can_view_customers_list()
+     14Γûò     {
+     15Γûò         $response = $this->get('/customers');
+  Γ₧£  16Γûò         $response->assertStatus(200);
+     17Γûò     }
+     18Γûò 
+     19Γûò     public function test_can_create_customer()
+     20Γûò     {
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Expected response status code [201, 301, 302, 303, 307, 308] but received 404.
+Failed asserting that false is true.
+
+  at tests\Feature\CustomerTest.php:27
+     23Γûò             'phone' => '0712345678',
+     24Γûò             'credit_limit' => 100000,
+     25Γûò         ]);
+     26Γûò 
+  Γ₧£  27Γûò         $response->assertRedirect('/customers');
+     28Γûò         $this->assertDatabaseHas('customers', [
+     29Γûò             'name' => 'Mama John',
+     30Γûò             'phone' => '0712345678',
+     31Γûò             'current_balance' => 0,
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Session is missing expected key [errors].
+Failed asserting that false is true.
+
+  at tests\Feature\CustomerTest.php:49
+     45Γûò             'phone' => '0712345678', // Same phone
+     46Γûò             'credit_limit' => 50000,
+     47Γûò         ]);
+     48Γûò 
+  Γ₧£  49Γûò         $response->assertSessionHasErrors('phone');
+     50Γûò     }
+     51Γûò }
+     52Γûò
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Failed asserting that the value at [repaymentRate] fulfills the expectations defined by the closure.
+Failed asserting that false is true.
+
+  at tests\Feature\DashboardTest.php:63
+     59Γûò         $response = $this->get('/');
+     60Γûò         $response->assertStatus(200);
+     61Γûò 
+     62Γûò         // Assert View Has Data
+  Γ₧£  63Γûò         $response->assertViewHas('repaymentRate', function ($val) {
+     64Γûò             return abs($val - 33.33) < 0.1; });
+     65Γûò         $response->assertViewHas('par', 4000); // 5000 - 1000
+     66Γûò         $response->assertViewHas('totalIssued', 8000);
+     67Γûò         $response->assertViewHas('totalCollected', 2000);
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'http://localhost/portal/login'
++'http://localhost'
+
+  at tests\Feature\PortalTest.php:66
+     62Γûò         $this->withSession(['customer_id' => 1]);
+     63Γûò 
+     64Γûò         $response = $this->post('/portal/logout');
+     65Γûò 
+  Γ₧£  66Γûò         $response->assertRedirect('/portal/login');
+     67Γûò         $response->assertSessionMissing('customer_id');
+     68Γûò     }
+     69Γûò }
+     70Γûò
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Failed asserting that a row in the table [customers] matches the attributes {
+    "id": 1,
+    "trust_score": 10
+}.
+
+Found similar results: [
+    {
+        "id": 1,
+        "trust_score": 0
+    }
+].
+
+  at tests\Feature\TrustScoreTest.php:41
+     37Γûò             'method' => 'cash',
+     38Γûò         ]);
+     39Γûò 
+     40Γûò         // Score should increase by 10
+  Γ₧£  41Γûò         $this->assertDatabaseHas('customers', [
+     42Γûò             'id' => $customer->id,
+     43Γûò             'trust_score' => 10,
+     44Γûò         ]);
+     45Γûò
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Failed asserting that a row in the table [customers] matches the attributes {
+    "id": 1,
+    "trust_score": 45
+}.
+
+Found similar results: [
+    {
+        "id": 1,
+        "trust_score": 50
+    }
+].
+
+  at tests\Feature\TrustScoreTest.php:80
+     76Γûò             'method' => 'cash',
+     77Γûò         ]);
+     78Γûò 
+     79Γûò         // Score should decrease by 5 (50 - 5 = 45)
+  Γ₧£  80Γûò         $this->assertDatabaseHas('customers', [
+     81Γûò             'id' => $customer->id,
+     82Γûò             'trust_score' => 45,
+     83Γûò         ]);
+     84Γûò
+
+
+  Tests:    11 failed, 24 passed (69 assertions)
+  Duration: 2.51s
+

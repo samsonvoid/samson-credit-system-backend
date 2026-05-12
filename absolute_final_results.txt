@@ -1,0 +1,59 @@
+﻿
+   PASS  Tests\Unit\ExampleTest
+  Γ£ô that trueΓÇª  0.01s  
+
+   PASS  Tests\Feature\AuthTest
+  Γ£ô unauthentiΓÇª 0.51s  
+  Γ£ô authenticaΓÇª 0.06s  
+  Γ£ô login screΓÇª 0.03s  
+  Γ£ô user can lΓÇª 0.04s  
+  Γ£ô user cannoΓÇª 0.23s  
+
+   PASS  Tests\Feature\CreditTest
+  Γ£ô can issueΓÇª  0.10s  
+  Γ£ô cannot excΓÇª 0.06s  
+  Γ£ô can recordΓÇª 0.05s  
+
+   PASS  Tests\Feature\CustomerRegistrationTest
+  Γ£ô registratiΓÇª 0.04s  
+  Γ£ô new custoΓÇª 10.13s  
+  Γ£ô customer cΓÇª 0.07s  
+  Γ£ô customer cΓÇª 8.26s  
+  Γ£ô customerΓÇª  13.26s  
+  Γ£ô customer cΓÇª 0.27s  
+
+   PASS  Tests\Feature\CustomerTest
+  Γ£ô can view cΓÇª 0.10s  
+  Γ£ô can createΓÇª 0.06s  
+  Γ£ô cannot creΓÇª 0.06s  
+
+   PASS  Tests\Feature\DashboardTest
+  Γ£ô dashboardΓÇª  0.07s  
+
+   PASS  Tests\Feature\ExampleTest
+  Γ£ô the applicΓÇª 0.05s  
+
+   PASS  Tests\Feature\PortalAuthTest
+  Γ£ô unauthentiΓÇª 0.05s  
+  Γ£ô customer lΓÇª 0.03s  
+  Γ£ô customer cΓÇª 0.03s  
+  Γ£ô customer cΓÇª 0.02s  
+  Γ£ô customer cΓÇª 0.03s  
+  Γ£ô authenticaΓÇª 0.03s  
+  Γ£ô authenticaΓÇª 0.03s  
+
+   PASS  Tests\Feature\PortalTest
+  Γ£ô portal logΓÇª 0.03s  
+  Γ£ô customer cΓÇª 0.02s  
+  Γ£ô cannot logΓÇª 0.03s  
+  Γ£ô dashboardΓÇª  0.03s  
+  Γ£ô guest cannΓÇª 0.02s  
+  Γ£ô logout      0.02s  
+
+   PASS  Tests\Feature\TrustScoreTest
+  Γ£ô trust scorΓÇª 0.04s  
+  Γ£ô trust scorΓÇª 0.05s  
+
+  Tests:    35 passed (86 assertions)
+  Duration: 34.33s
+

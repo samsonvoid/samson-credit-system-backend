@@ -1,0 +1,11 @@
+﻿
+   PASS  Tests\Feature\AuthTest
+  Γ£ô unauthentiΓÇª 0.45s  
+  Γ£ô authenticaΓÇª 0.06s  
+  Γ£ô login screΓÇª 0.05s  
+  Γ£ô user can lΓÇª 0.04s  
+  Γ£ô user cannoΓÇª 0.23s  
+
+  Tests:    5 passed (12 assertions)
+  Duration: 1.15s
+

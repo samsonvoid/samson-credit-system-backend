@@ -1,0 +1,22 @@
+﻿
+   OutOfBoundsException 
+
+  Package "livewire/livewire" is not installed
+
+  at vendor\composer\InstalledVersions.php:214
+    210Γûò 
+    211Γûò             return $installed['versions'][$packageName]['pretty_version'];
+    212Γûò         }
+    213Γûò 
+  Γ₧£ 214Γûò         throw new \OutOfBoundsException('Package "' . $packageName . '" is not installed');
+    215Γûò     }
+    216Γûò 
+    217Γûò     /**
+    218Γûò      * @param  string      $packageName
+
+  1   vendor\livewire\livewire\src\LivewireServiceProvider.php:151
+      Composer\InstalledVersions::getPrettyVersion("livewire/livewire")
+
+  2   vendor\livewire\livewire\src\LivewireServiceProvider.php:24
+      Livewire\LivewireServiceProvider::bootMechanisms()
+

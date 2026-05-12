@@ -1,0 +1,16 @@
+{
+    "name": "Digital Credit Ledger",
+    "short_name": "CreditLedger",
+    "description": "Digital credit management for small-scale vendors in Tanzania",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#3B82F6",
+    "icons": [
+        {
+            "src": "/images/icon-192.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml"
+        }
+    ]
+}

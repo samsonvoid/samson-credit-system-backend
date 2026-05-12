@@ -1,0 +1,79 @@
+﻿
+   PASS  Tests\Unit\ExampleTest
+  Γ£ô that trueΓÇª  0.01s  
+
+   PASS  Tests\Feature\AuthTest
+  Γ£ô unauthentiΓÇª 0.74s  
+  Γ£ô authenticaΓÇª 0.12s  
+  Γ£ô login screΓÇª 0.05s  
+  Γ£ô user can lΓÇª 0.05s  
+  Γ£ô user cannoΓÇª 0.26s  
+
+   PASS  Tests\Feature\CreditTest
+  Γ£ô can issueΓÇª  0.17s  
+  Γ£ô cannot excΓÇª 0.04s  
+  Γ£ô can recordΓÇª 0.09s  
+
+   FAIL  Tests\Feature\CustomerRegistrationTest
+  Γ£ô registratiΓÇª 0.04s  
+  Γ¿» new customΓÇª 7.52s  
+  Γ£ô customer cΓÇª 0.06s  
+  Γ£ô customer cΓÇª 4.10s  
+  Γ£ô customer cΓÇª 5.84s  
+  Γ£ô customer cΓÇª 0.27s  
+
+   PASS  Tests\Feature\CustomerTest
+  Γ£ô can view cΓÇª 0.11s  
+  Γ£ô can createΓÇª 0.07s  
+  Γ£ô cannot creΓÇª 0.03s  
+
+   PASS  Tests\Feature\DashboardTest
+  Γ£ô dashboardΓÇª  0.04s  
+
+   PASS  Tests\Feature\ExampleTest
+  Γ£ô the applicΓÇª 0.07s  
+
+   PASS  Tests\Feature\PortalAuthTest
+  Γ£ô unauthentiΓÇª 0.04s  
+  Γ£ô customer lΓÇª 0.02s  
+  Γ£ô customer cΓÇª 0.02s  
+  Γ£ô customer cΓÇª 0.02s  
+  Γ£ô customer cΓÇª 0.02s  
+  Γ£ô authenticaΓÇª 0.03s  
+  Γ£ô authenticaΓÇª 0.03s  
+
+   PASS  Tests\Feature\PortalTest
+  Γ£ô portal logΓÇª 0.03s  
+  Γ£ô customer cΓÇª 0.02s  
+  Γ£ô cannot logΓÇª 0.02s  
+  Γ£ô dashboardΓÇª  0.03s  
+  Γ£ô guest cannΓÇª 0.02s  
+  Γ£ô logout      0.02s  
+
+   PASS  Tests\Feature\TrustScoreTest
+  Γ£ô trust scorΓÇª 0.03s  
+  Γ£ô trust scorΓÇª 0.03s  
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Failed asserting that a row in the table [customers] matches the attributes {
+    "email": "customer@example.com",
+    "phone": "0712345678"
+}.
+
+The table is empty.
+
+  at tests\Feature\CustomerRegistrationTest.php:30
+     26Γûò             'password' => 'Password123!',
+     27Γûò             'password_confirmation' => 'Password123!',
+     28Γûò         ]);
+     29Γûò 
+  Γ₧£  30Γûò         $this->assertDatabaseHas('customers', [
+     31Γûò             'email' => 'customer@example.com',
+     32Γûò             'phone' => '0712345678',
+     33Γûò         ]);
+     34Γûò
+
+
+  Tests:    1 failed, 34 passed (83 assertions)
+  Duration: 20.49s
+

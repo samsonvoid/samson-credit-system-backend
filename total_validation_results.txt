@@ -1,0 +1,75 @@
+﻿
+   PASS  Tests\Unit\ExampleTest
+  Γ£ô that trueΓÇª  0.01s  
+
+   PASS  Tests\Feature\AuthTest
+  Γ£ô unauthentiΓÇª 0.42s  
+  Γ£ô authenticaΓÇª 0.06s  
+  Γ£ô login screΓÇª 0.04s  
+  Γ£ô user can lΓÇª 0.03s  
+  Γ£ô user cannoΓÇª 0.23s  
+
+   PASS  Tests\Feature\CreditTest
+  Γ£ô can issueΓÇª  0.11s  
+  Γ£ô cannot excΓÇª 0.06s  
+  Γ£ô can recordΓÇª 0.10s  
+
+   PASS  Tests\Feature\CustomerRegistrationTest
+  Γ£ô registratiΓÇª 0.03s  
+  Γ£ô new custoΓÇª 10.12s  
+  Γ£ô customer cΓÇª 0.06s  
+  Γ£ô customer cΓÇª 7.80s  
+  Γ£ô customer cΓÇª 3.36s  
+  Γ£ô customer cΓÇª 0.28s  
+
+   PASS  Tests\Feature\CustomerTest
+  Γ£ô can view cΓÇª 0.15s  
+  Γ£ô can createΓÇª 0.05s  
+  Γ£ô cannot creΓÇª 0.05s  
+
+   FAIL  Tests\Feature\DashboardTest
+  Γ¿» dashboardΓÇª  0.10s  
+
+   PASS  Tests\Feature\ExampleTest
+  Γ£ô the applicΓÇª 0.06s  
+
+   PASS  Tests\Feature\PortalAuthTest
+  Γ£ô unauthentiΓÇª 0.04s  
+  Γ£ô customer lΓÇª 0.05s  
+  Γ£ô customer cΓÇª 0.09s  
+  Γ£ô customer cΓÇª 0.05s  
+  Γ£ô customer cΓÇª 0.06s  
+  Γ£ô authenticaΓÇª 0.07s  
+  Γ£ô authenticaΓÇª 0.12s  
+
+   PASS  Tests\Feature\PortalTest
+  Γ£ô portal logΓÇª 0.08s  
+  Γ£ô customer cΓÇª 0.05s  
+  Γ£ô cannot logΓÇª 0.06s  
+  Γ£ô dashboardΓÇª  0.06s  
+  Γ£ô guest cannΓÇª 0.05s  
+  Γ£ô logout      0.05s  
+
+   PASS  Tests\Feature\TrustScoreTest
+  Γ£ô trust scorΓÇª 0.08s  
+  Γ£ô trust scorΓÇª 0.08s  
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\FeΓÇª   
+  Failed asserting that the value at [repaymentRate] fulfills the expectations defined by the closure.
+Failed asserting that false is true.
+
+  at tests\Feature\DashboardTest.php:63
+     59Γûò         $response = $this->get('/');
+     60Γûò         $response->assertStatus(200);
+     61Γûò 
+     62Γûò         // Assert View Has Data
+  Γ₧£  63Γûò         $response->assertViewHas('repaymentRate', function ($val) {
+     64Γûò             return abs($val - 33.33) < 0.1; });
+     65Γûò         $response->assertViewHas('par', 4000); // 5000 - 1000
+     66Γûò         $response->assertViewHas('totalIssued', 8000);
+     67Γûò         $response->assertViewHas('totalCollected', 2000);
+
+
+  Tests:    1 failed, 34 passed (83 assertions)
+  Duration: 24.50s
+
