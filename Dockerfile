@@ -1,36 +1,32 @@
-FROM php:8.2-apache
+FROM php:8.2-fpm
 
-# 1. Install system dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git curl libpng-dev libonig-dev libxml2-dev zip unzip libpq-dev
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip
 
-# 2. Clear cache
+# Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 3. Install PHP extensions ya MySQL
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd && \
+    pecl install redis && \
+    docker-php-ext-enable redis
 
-# 4. Enable Apache Rewrite Module (Muhimu kwa Laravel URLs)
-RUN a2enmod rewrite
-
-# 5. Get latest Composer
+# Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 6. Set working directory
-WORKDIR /var/www/html
+# Set working directory
+WORKDIR /var/www
 
-# 7. Copy kodi za backend pekee
-COPY . /var/www/html
+# Copy existing application directory contents
+COPY . /var/www
 
-# 8. Rekebisha ruhusa (Permissions)
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-
-# 9. Elekeza Apache kwenye folder la /public
-RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
-
-# 10. Badilisha Port iwe 8080 kwa ajili ya Clever Cloud
-ENV PORT 8080
-EXPOSE 8080
-RUN sed -i 's/80/8080/g' /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf
-
-CMD ["apache2-foreground"]
+# Expose port 9000 and start php-fpm server
+EXPOSE 9000
+CMD ["php-fpm"]

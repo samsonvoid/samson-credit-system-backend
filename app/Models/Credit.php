@@ -32,6 +32,11 @@ class Credit extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function creditItems()
+    {
+        return $this->hasMany(CreditItem::class);
+    }
+
     // Dynamic attribute to calculate how much is left to pay on this specific credit
     public function getBalanceAttribute()
     {

@@ -26,33 +26,53 @@ Route::get('/reports/circulation', [App\Http\Controllers\CirculationController::
 Route::get('/reports/debtors', [App\Http\Controllers\ReportController::class, 'getDebtorsReport'])->middleware('auth:sanctum');
 Route::get('/reports/download-pdf', [App\Http\Controllers\ReportController::class, 'downloadPdfReport'])->middleware('auth:sanctum');
 
-// Public: Token Generation
+// Public: Token Generation (Works for both Admin and Customer)
 Route::post('/tokens/create', function (Request $request) {
     $request->validate([
-        'email' => 'required', // Removed strict |email to allow flexible login strings
+        'email' => 'required',
         'password' => 'required',
         'device_name' => 'required',
     ]);
 
+    // Try Admin Login
     $user = User::where('email', $request->email)->first();
 
-    if (!$user) {
-        return response()->json(['message' => 'User not found: ' . $request->email], 401);
+    if ($user && Hash::check($request->password, $user->password)) {
+        return response()->json([
+            'token' => $user->createToken($request->device_name)->plainTextToken,
+            'user' => [
+                'id' => $user->id, 
+                'name' => $user->name, 
+                'shop_name' => $user->shop_name,
+                'role' => $user->role
+            ]
+        ]);
     }
 
-    if (!Hash::check($request->password, $user->password)) {
-        return response()->json(['message' => 'Password mismatch'], 401);
+    // Try Customer Login (by phone or email)
+    $isEmail = filter_var($request->email, FILTER_VALIDATE_EMAIL);
+    
+    $customerQuery = Customer::query();
+    if ($isEmail) {
+        $customerQuery->where('email', $request->email);
+    } else {
+        $customerQuery->where('phone', $request->email);
+    }
+    $customer = $customerQuery->first();
+
+    if ($customer && Hash::check($request->password, $customer->password)) {
+        return response()->json([
+            'token' => $customer->createToken($request->device_name)->plainTextToken,
+            'user' => [
+                'id' => $customer->id, 
+                'name' => $customer->name, 
+                'role' => 'customer',
+                'trust_score' => $customer->trust_score,
+            ]
+        ]);
     }
 
-    return response()->json([
-        'token' => $user->createToken($request->device_name)->plainTextToken,
-        'user' => [
-            'id' => $user->id, 
-            'name' => $user->name, 
-            'shop_name' => $user->shop_name,
-            'role' => $user->role
-        ]
-    ]);
+    return response()->json(['message' => 'Invalid credentials'], 401);
 })->middleware('throttle:5,1');
 
 // Customer Portal Token (for mobile app customers)
@@ -94,32 +114,127 @@ Route::post('/register', function (Request $request) {
     ], 201);
 })->middleware('throttle:3,1');
 
-// Customer Portal Data (RBAC: Customer only)
-Route::middleware(['auth:sanctum', 'role:customer'])->get('/portal/me', function (Request $request) {
-    $customer = Customer::with(['credits' => function($query) {
-        $query->orderBy('created_at', 'desc');
-    }])->find($request->user()->customer_id);
+// Public: Customer Self-Registration (Limited to 5 per minute)
+Route::post('/register-customer', function (Request $request) {
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:customers,email',
+        'phone' => 'required|string|max:20|unique:customers,phone',
+        'password' => 'required|string|min:8|confirmed',
+    ]);
 
-    // Generate Alerts
-    $alerts = [];
-    $overdueCredits = $customer->credits->where('status', 'active')->where('due_date', '<', now()->toDateString());
-    
-    if ($overdueCredits->count() > 0) {
-        $alerts[] = [
-            'type' => 'danger',
-            'message' => 'Una deni la TZS ' . number_format($overdueCredits->sum('amount')) . ' lililopitisha wakati. Tafadhali lipia sasa!',
-            'icon' => 'warning'
-        ];
-    }
+    $customer = Customer::create([
+        'name' => $validated['name'],
+        'email' => $validated['email'],
+        'phone' => $validated['phone'],
+        'password' => Hash::make($validated['password']),
+        'credit_limit' => 10000,
+        'trust_score' => 0,
+        'current_balance' => 0,
+    ]);
 
     return response()->json([
-        'customer' => $customer,
-        'alerts' => $alerts
-    ]);
+        'message' => 'Customer registered successfully',
+        'token' => $customer->createToken('mobile')->plainTextToken,
+        'customer' => [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'email' => $customer->email,
+            'phone' => $customer->phone,
+            'trust_score' => $customer->trust_score,
+            'credit_limit' => $customer->credit_limit,
+            'current_balance' => $customer->current_balance,
+        ]
+    ], 201);
+})->middleware('throttle:5,1');
+
+// Customer Portal Data (RBAC: Customer only)
+Route::middleware(['auth:sanctum', 'role:customer'])->get('/portal/me', function (Request $request) {
+    try {
+        $customer = Customer::with([
+            'credits' => function($query) {
+                $query->orderBy('created_at', 'desc')->with('creditItems.item');
+            }
+        ])->find($request->user()->id);
+        
+        if (!$customer) {
+            return response()->json(['error' => 'Customer not found'], 404);
+        }
+
+        // Generate Alerts
+        $alerts = [];
+        $overdueCredits = $customer->credits->where('status', 'active')->where('due_date', '<', now()->toDateString());
+        
+        if ($overdueCredits->count() > 0) {
+            $alerts[] = [
+                'type' => 'danger',
+                'message' => 'Una deni la TZS ' . number_format($overdueCredits->sum('amount')) . ' lililopitisha wakati. Tafadhali lipia sasa!',
+                'icon' => 'warning'
+            ];
+        }
+
+        return response()->json([
+            'customer' => $customer,
+            'alerts' => $alerts
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
 });
 
 // Protected API (Sanctum - Admin only by default or general)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
+    
+    // Customer: Record Payment Request (Manual M-Pesa)
+    Route::post('/payments', function (Request $request) {
+        $validated = $request->validate([
+            'credit_id' => 'required|exists:credits,id',
+            'amount' => 'required|numeric|min:100',
+            'payment_method' => 'required|in:mpesa,cash',
+            'phone' => 'nullable|string',
+        ]);
+        
+        $user = $request->user();
+        $credit = Credit::find($validated['credit_id']);
+        
+        // Verify ownership for customers
+        if (get_class($user) === 'App\\Models\\Customer' && $credit->customer_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+        
+        $payment = Payment::create([
+            'credit_id' => $credit->id,
+            'amount_paid' => $validated['amount'],
+            'method' => $validated['payment_method'],
+            'payment_date' => now()->toDateString(),
+        ]);
+        
+        return response()->json([
+            'message' => 'Malipo yameandikishwa. Utaarifiwa baada ya kuthibitishwa.',
+            'payment' => $payment
+        ], 201);
+    });
+
+    // Customer: Get Payment History
+    Route::get('/payments/history', function (Request $request) {
+        $user = $request->user();
+        
+        $payments = Payment::whereHas('credit', function($q) use ($user) {
+            $q->where('customer_id', $user->id);
+        })
+        ->with('credit')
+        ->orderBy('created_at', 'desc')
+        ->get();
+        
+        return response()->json(['payments' => $payments]);
+    });
+
+    // Items API
+    Route::get('/items', [App\Http\Controllers\Api\CreditApiController::class, 'getItems']);
+    Route::post('/items', [App\Http\Controllers\Api\CreditApiController::class, 'addItems']);
+
+    // Credits API (Issue Credit with Items)
+    Route::post('/credits', [App\Http\Controllers\Api\CreditApiController::class, 'store']);
 
     // System Monitoring API
     Route::get('/system/status', function () {

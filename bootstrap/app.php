@@ -16,12 +16,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.customer' => \App\Http\Middleware\EnsureCustomerLoggedIn::class,
             'role' => \App\Http\Middleware\CheckRole::class,
         ]);
-        
-        // Apply CORS and Rate Limiting to API routes
-        $middleware->group('api', [
-            \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
-            \App\Http\Middleware\HandleCors::class,
-        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

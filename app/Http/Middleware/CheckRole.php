@@ -15,7 +15,20 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        if (!$request->user() || $request->user()->role !== $role) {
+        $user = $request->user();
+        
+        if (!$user) {
+            abort(403, 'Unauthorized');
+        }
+        
+        if ($role === 'customer') {
+            if (get_class($user) === 'App\\Models\\Customer') {
+                return $next($request);
+            }
+            abort(403, 'Unauthorized. Customer access only.');
+        }
+        
+        if ($user->role !== $role) {
             abort(403, 'Unauthorized. This action requires ' . $role . ' privileges.');
         }
 

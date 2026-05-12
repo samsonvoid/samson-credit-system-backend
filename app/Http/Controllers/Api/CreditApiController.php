@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Credit;
 use App\Models\Customer;
+use App\Models\CreditItem;
 use App\Models\Transaction;
+use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,15 +17,34 @@ class CreditApiController extends Controller
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
-            'amount' => 'required|numeric|min:1',
-            'due_date' => 'required|date|after:today',
+            'due_date' => 'required|date|after_or_equal:today',
             'type' => 'required|in:cash,item',
             'description' => 'nullable|string|max:255',
+            'items' => 'nullable|array',
+            'items.*.item_id' => 'nullable|integer',
+            'items.*.quantity' => 'nullable|integer|min:1',
+            'items.*.unit_price' => 'nullable|numeric|min:0',
+            'items.*.subtotal' => 'nullable|numeric|min:0',
+            'amount' => 'nullable|numeric|min:1',
         ]);
 
         $customer = Customer::findOrFail($validated['customer_id']);
 
-        if (($customer->current_balance + $validated['amount']) > $customer->credit_limit) {
+        // Block if customer has outstanding debt
+        if ($customer->current_balance > 0) {
+            return response()->json([
+                'error' => "{$customer->name} ana deni lililosalia (TZS " . number_format($customer->current_balance) . "). Hairuhusiwi kuchukua mkopo mpya hadi alipe!",
+                'current_balance' => $customer->current_balance
+            ], 422);
+        }
+
+        $totalAmount = $validated['amount'] ?? 0;
+        
+        if (!empty($validated['items'])) {
+            $totalAmount = array_sum(array_column($validated['items'], 'subtotal'));
+        }
+
+        if (($customer->current_balance + $totalAmount) > $customer->credit_limit) {
             return response()->json([
                 'error' => 'Credit limit exceeded.',
                 'current_balance' => $customer->current_balance,
@@ -31,34 +52,83 @@ class CreditApiController extends Controller
             ], 422);
         }
 
-        $credit = DB::transaction(function () use ($validated, $customer) {
+        $credit = DB::transaction(function () use ($validated, $customer, $totalAmount) {
             $credit = Credit::create([
                 'customer_id' => $validated['customer_id'],
-                'amount' => $validated['amount'],
+                'amount' => $totalAmount,
                 'type' => $validated['type'],
                 'description' => $validated['description'] ?? null,
                 'due_date' => $validated['due_date'],
                 'status' => 'active',
             ]);
 
-            $customer->increment('current_balance', $validated['amount']);
+            if (!empty($validated['items'])) {
+                foreach ($validated['items'] as $itemData) {
+                    if (!empty($itemData['item_id'])) {
+                        CreditItem::create([
+                            'credit_id' => $credit->id,
+                            'item_id' => $itemData['item_id'],
+                            'quantity' => $itemData['quantity'] ?? 1,
+                            'unit_price' => $itemData['unit_price'] ?? 0,
+                            'subtotal' => $itemData['subtotal'] ?? 0,
+                        ]);
+                    }
+                }
+            }
 
-            $itemDesc = ($validated['description'] ?? null) ? " ({$validated['description']})" : "";
+            $customer->increment('current_balance', $totalAmount);
+
+            $itemDesc = !empty($validated['items']) ? ' (' . count($validated['items']) . ' items)' : '';
+            $itemDesc .= ($validated['description'] ?? null) ? " - {$validated['description']}" : "";
+            
             Transaction::create([
                 'customer_id' => $customer->id,
                 'type' => 'credit_issued',
-                'amount' => $validated['amount'],
+                'amount' => $totalAmount,
                 'reference_id' => $credit->id,
-                'description' => "API ISSUED: {$validated['type']} credit{$itemDesc}",
+                'description' => "MKOPO WA {$validated['type']}{$itemDesc}",
             ]);
 
             return $credit;
         });
 
+        $credit->load('creditItems.item');
+
         return response()->json([
-            'message' => 'Credit issued successfully via API.',
+            'message' => 'Credit issued successfully.',
             'credit_id' => $credit->id,
+            'total_amount' => $totalAmount,
+            'items_count' => count($validated['items'] ?? []),
             'new_balance' => $customer->fresh()->current_balance
         ]);
+    }
+
+    public function getItems()
+    {
+        $items = Item::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'sku', 'price', 'unit', 'category']);
+        
+        return response()->json(['items' => $items]);
+    }
+
+    public function addItems(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'sku' => 'nullable|string|max:50|unique:items,sku',
+            'description' => 'nullable|string',
+            'category' => 'nullable|string|max:100',
+            'price' => 'required|numeric|min:0',
+            'unit' => 'nullable|string|max:50',
+            'stock_quantity' => 'nullable|integer|min:0',
+        ]);
+
+        $item = Item::create($validated);
+
+        return response()->json([
+            'message' => 'Item added successfully.',
+            'item' => $item
+        ], 201);
     }
 }
