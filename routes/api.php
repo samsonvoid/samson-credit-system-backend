@@ -547,6 +547,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'status' => 'active',
             ]);
 
+            // Create transaction for circulation (money out - credit issued)
+            \App\Models\Transaction::create([
+                'user_id' => $request->user()->id,
+                'customer_id' => $validated['customer_id'],
+                'type' => 'credit_issued',
+                'circulation_type' => $validated['type'] === 'cash' ? 'CASH' : 'PRODUCT',
+                'amount' => $validated['amount'],
+                'direction' => 'out',
+                'description' => 'Mkopo mpya: ' . ($validated['description'] ?? 'Berekodi'),
+            ]);
+
             $customer->increment('current_balance', $validated['amount']);
             
             // Clear Dashboard Cache
@@ -579,10 +590,32 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'method' => $validated['method'],
             ]);
 
+            // Create transaction for circulation
+            \App\Models\Transaction::create([
+                'user_id' => $credit->customer->id,
+                'customer_id' => $credit->customer_id,
+                'type' => 'payment_received',
+                'circulation_type' => strtoupper($validated['method']),
+                'amount' => $validated['amount_paid'],
+                'direction' => 'in',
+                'description' => 'Malipo ya deni (' . $validated['method'] . ')',
+            ]);
+
             $credit->customer->decrement('current_balance', $validated['amount_paid']);
 
             if ($credit->fresh()->payments()->sum('amount_paid') >= $credit->amount) {
                 $credit->update(['status' => 'closed']);
+                
+                // Record credit closure
+                \App\Models\Transaction::create([
+                    'user_id' => $credit->customer_id,
+                    'customer_id' => $credit->customer_id,
+                    'type' => 'credit_closed',
+                    'circulation_type' => 'SETTLEMENT',
+                    'amount' => $credit->amount,
+                    'direction' => 'out',
+                    'description' => 'Mkopo: ' . $credit->description,
+                ]);
             }
 
             // Clear Dashboard Cache
@@ -709,6 +742,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'mpesa_code' => $pending->payment_ref,
         ]);
 
+        // Create transaction record for circulation
+        \App\Models\Transaction::create([
+            'user_id' => $request->user()->id,
+            'customer_id' => $credit->customer_id,
+            'type' => 'payment_received',
+            'circulation_type' => 'MPESA',
+            'amount' => $pending->amount,
+            'direction' => 'in',
+            'description' => 'Malipo ya deni - ' . $pending->payment_ref,
+        ]);
+
         // Update customer balance - decrement
         $credit->customer->current_balance = max(0, $credit->customer->current_balance - $pending->amount);
         $credit->customer->save();
@@ -717,6 +761,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
         $totalPaid = \App\Models\Payment::where('credit_id', $credit->id)->sum('amount_paid');
         if ($totalPaid >= $credit->amount) {
             $credit->update(['status' => 'closed']);
+            
+            // Record credit closure as transaction (money out)
+            \App\Models\Transaction::create([
+                'customer_id' => $credit->customer_id,
+                'type' => 'credit_issued',
+                'amount' => $credit->amount,
+                'direction' => 'out',
+                'description' => 'Mkopo: ' . $credit->description,
+            ]);
         }
 
         // Mark pending as confirmed
