@@ -36,6 +36,7 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo 'if [ "$USE_LARAVEL_SERVER" = "true" ]; then' >> /start.sh && \
     echo '    echo "Starting Laravel server on port 8080 (Clever Cloud mode)"' >> /start.sh && \
     echo '    php artisan key:generate --force --no-interaction' >> /start.sh && \
+    echo '    export CACHE_STORE=file' >> /start.sh && \
     echo '    php artisan config:clear' >> /start.sh && \
     echo '    php artisan cache:clear' >> /start.sh && \
     echo '    php artisan route:clear' >> /start.sh && \
