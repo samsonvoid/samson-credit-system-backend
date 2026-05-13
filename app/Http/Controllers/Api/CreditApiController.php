@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\CreditItem;
 use App\Models\Transaction;
 use App\Models\Item;
+use App\Services\EmailNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -94,6 +95,14 @@ class CreditApiController extends Controller
 
         $credit->load('creditItems.item');
 
+        // Send email notification to customer
+        try {
+            EmailNotificationService::creditIssued($credit);
+        } catch (\Exception $e) {
+            // Don't fail the operation if email fails
+            \Log::error("Failed to send credit email: " . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'Credit issued successfully.',
             'credit_id' => $credit->id,
@@ -105,11 +114,13 @@ class CreditApiController extends Controller
 
     public function getItems()
     {
-        $items = Item::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'sku', 'price', 'unit', 'category']);
-        
-        return response()->json(['items' => $items]);
+        return \Illuminate\Support\Facades\Cache::remember('items_list', 60, function() {
+            $items = Item::where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'sku', 'price', 'unit', 'category']);
+            
+            return response()->json(['items' => $items]);
+        });
     }
 
     public function addItems(Request $request)
@@ -125,6 +136,8 @@ class CreditApiController extends Controller
         ]);
 
         $item = Item::create($validated);
+        
+        \Illuminate\Support\Facades\Cache::forget('items_list');
 
         return response()->json([
             'message' => 'Item added successfully.',

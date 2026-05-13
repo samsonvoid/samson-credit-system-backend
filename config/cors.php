@@ -21,7 +21,7 @@ return [
         'http://localhost:3000',
         'http://127.0.0.1:3000',
         'https://samson-credit-system-frontend-iz29.vercel.app', // URL yako ya Vercel
-        'https://samson-credit-system-frontend.vercel.app'      // URL kuu ya Vercel (kwa usalama zaidi)
+        'https://samson-credit-system-frontend.vercel.app',      // URL kuu ya Vercel (kwa usalama zaidi)
     ],
 
     'allowed_origins_patterns' => [],
