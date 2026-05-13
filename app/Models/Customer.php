@@ -51,4 +51,22 @@ class Customer extends Authenticatable
     {
         return $this->hasMany(Transaction::class);
     }
+
+    /**
+     * Recalculate and update current_balance from all active credits
+     */
+    public function recalculateBalance()
+    {
+        $totalOutstanding = $this->credits()
+            ->where('status', 'active')
+            ->get()
+            ->sum(function ($credit) {
+                return $credit->balance;
+            });
+        
+        $this->current_balance = $totalOutstanding;
+        $this->save();
+        
+        return $this->current_balance;
+    }
 }

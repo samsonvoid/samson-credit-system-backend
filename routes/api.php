@@ -203,6 +203,10 @@ Route::post('/register-customer', function (Request $request) {
 // Customer Portal Data (RBAC: Customer only)
 Route::middleware(['auth:sanctum', 'role:customer'])->get('/portal/me', function (Request $request) {
     try {
+        // Recalculate customer balance on every request
+        $customer = Customer::find($request->user()->id);
+        $customer->recalculateBalance();
+        
         $customer = Customer::select([
             'id', 'name', 'email', 'phone', 'business_name', 'trust_score', 'credit_limit', 'current_balance'
         ])->with([
@@ -700,24 +704,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
         $payment = \App\Models\Payment::create([
             'credit_id' => $pending->credit_id,
             'amount_paid' => $pending->amount,
-            'payment_date' => $pending->confirmed_at,
+            'payment_date' => now()->toDateString(),
             'method' => 'mpesa',
             'mpesa_code' => $pending->payment_ref,
         ]);
 
-        // Update customer balance
-        $credit->customer->decrement('current_balance', $pending->amount);
+        // Update customer balance - decrement
+        $credit->customer->current_balance = max(0, $credit->customer->current_balance - $pending->amount);
+        $credit->customer->save();
 
         // Update credit status if fully paid
-        if ($credit->fresh()->payments()->sum('amount_paid') >= $credit->amount) {
+        $totalPaid = \App\Models\Payment::where('credit_id', $credit->id)->sum('amount_paid');
+        if ($totalPaid >= $credit->amount) {
             $credit->update(['status' => 'closed']);
         }
 
         // Mark pending as confirmed
-        $pending->update(['status' => 'confirmed']);
+        $pending->update(['status' => 'confirmed', 'confirmed_at' => now()]);
 
-        // Clear cache
+        // Clear all related caches
         \Illuminate\Support\Facades\Cache::forget('dashboard_metrics');
+        \Illuminate\Support\Facades\Cache::forget('portal_customer_' . $credit->customer_id);
 
         // Send email
         try {
@@ -728,7 +735,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         return response()->json([
             'message' => 'Payment confirmed successfully',
-            'payment' => $payment
+            'payment' => $payment,
+            'new_balance' => $credit->customer->fresh()->current_balance
         ], 200);
     });
 
