@@ -25,6 +25,7 @@ Route::get('/health', function () {
 Route::get('/reports/circulation', [App\Http\Controllers\CirculationController::class, 'getStats'])->middleware('auth:sanctum');
 Route::get('/reports/debtors', [App\Http\Controllers\ReportController::class, 'getDebtorsReport'])->middleware('auth:sanctum');
 Route::get('/reports/download-pdf', [App\Http\Controllers\ReportController::class, 'downloadPdfReport'])->middleware('auth:sanctum');
+Route::get('/reports/trends', [App\Http\Controllers\ReportController::class, 'getTrends'])->middleware('auth:sanctum');
 
 // Public: Token Generation (Works for both Admin and Customer)
 Route::post('/tokens/create', function (Request $request) {

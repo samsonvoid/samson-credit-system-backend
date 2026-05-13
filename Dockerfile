@@ -27,6 +27,9 @@ WORKDIR /var/www
 # Copy existing application directory contents
 COPY . /var/www
 
+# Install Laravel dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
 # Create startup script that respects environment
 RUN echo '#!/bin/bash' > /start.sh && \
     echo 'echo "Checking startup mode..."' >> /start.sh && \
