@@ -30,13 +30,20 @@ COPY . /var/www
 # Install Laravel dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# Create required storage directories
+RUN mkdir -p /var/www/storage/framework/cache/data && \
+    mkdir -p /var/www/storage/framework/sessions && \
+    mkdir -p /var/www/storage/framework/views && \
+    mkdir -p /var/www/storage/framework/testing && \
+    chmod -R 775 /var/www/storage
+
 # Create startup script that respects environment
 RUN echo '#!/bin/bash' > /start.sh && \
     echo 'echo "Checking startup mode..."' >> /start.sh && \
     echo 'if [ "$USE_LARAVEL_SERVER" = "true" ]; then' >> /start.sh && \
     echo '    echo "Starting Laravel server on port 8080 (Clever Cloud mode)"' >> /start.sh && \
     echo '    php artisan key:generate --force --no-interaction' >> /start.sh && \
-    echo '    export CACHE_STORE=file' >> /start.sh && \
+    echo '    php artisan storage:link' >> /start.sh && \
     echo '    php artisan config:clear' >> /start.sh && \
     echo '    php artisan cache:clear' >> /start.sh && \
     echo '    php artisan route:clear' >> /start.sh && \
