@@ -35,6 +35,7 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo 'echo "Checking startup mode..."' >> /start.sh && \
     echo 'if [ "$USE_LARAVEL_SERVER" = "true" ]; then' >> /start.sh && \
     echo '    echo "Starting Laravel server on port 8080 (Clever Cloud mode)"' >> /start.sh && \
+    echo '    php artisan key:generate --force --no-interaction' >> /start.sh && \
     echo '    php artisan serve --host=0.0.0.0 --port=8080' >> /start.sh && \
     echo 'else' >> /start.sh && \
     echo '    echo "Starting PHP-FPM on port 9000 (Local/Dev mode)"' >> /start.sh && \
