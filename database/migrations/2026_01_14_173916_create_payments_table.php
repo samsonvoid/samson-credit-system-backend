@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('credit_id')->constrained()->onDelete('cascade');
             $table->decimal('amount_paid', 15, 2);
-            $table->date('payment_date')->useCurrent();
+            $table->date('payment_date')->nullable();
             $table->string('method')->default('cash'); // cash, mpesa
             $table->timestamps();
         });
