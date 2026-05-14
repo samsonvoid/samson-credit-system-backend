@@ -42,7 +42,15 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo 'echo "Checking startup mode..."' >> /start.sh && \
     echo 'if [ "$USE_LARAVEL_SERVER" = "true" ]; then' >> /start.sh && \
     echo '    echo "Starting Laravel server on port 8080 (Clever Cloud mode)"' >> /start.sh && \
-    echo '    echo "Clearing Laravel cache to read env vars directly..."' >> /start.sh && \
+    echo '    echo "Exporting MySQL env vars to override .env..."' >> /start.sh && \
+    echo '    export DB_HOST=${MYSQL_ADDON_HOST}' >> /start.sh && \
+    echo '    export DB_PORT=${MYSQL_ADDON_PORT}' >> /start.sh && \
+    echo '    export DB_DATABASE=${MYSQL_ADDON_DB}' >> /start.sh && \
+    echo '    export DB_USERNAME=${MYSQL_ADDON_USER}' >> /start.sh && \
+    echo '    export DB_PASSWORD=${MYSQL_ADDON_PASSWORD}' >> /start.sh && \
+    echo '    export APP_KEY=${APP_KEY}' >> /start.sh && \
+    echo '    echo "DB_HOST=${DB_HOST}"' >> /start.sh && \
+    echo '    echo "Clearing Laravel cache..."' >> /start.sh && \
     echo '    php artisan config:clear' >> /start.sh && \
     echo '    php artisan cache:clear' >> /start.sh && \
     echo '    php artisan route:clear' >> /start.sh && \
