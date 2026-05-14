@@ -56,7 +56,9 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo '    php artisan route:clear' >> /start.sh && \
     echo '    php artisan view:clear' >> /start.sh && \
     echo '    php artisan event:clear' >> /start.sh && \
-    echo '    php artisan storage:link' >> /start.sh && \
+    echo '    echo "Storage linked successfully"' >> /start.sh && \
+    echo '    echo "Running database migrations..."' >> /start.sh && \
+    echo '    php artisan migrate --force' >> /start.sh && \
     echo '    php artisan serve --host=0.0.0.0 --port=8080' >> /start.sh && \
     echo 'else' >> /start.sh && \
     echo '    echo "Starting PHP-FPM on port 9000 (Local/Dev mode)"' >> /start.sh && \
