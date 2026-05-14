@@ -144,8 +144,14 @@ Route::post('/portal/token', function (Request $request) {
     ]);
 });
 
-// Public: User Registration (Limited to 3 per minute)
+// Protected: User Registration (Admin only - disabled by default in production)
 Route::post('/register', function (Request $request) {
+    if (!env('ADMIN_REGISTRATION_ENABLED', false)) {
+        return response()->json([
+            'message' => 'Admin registration is disabled. Contact system administrator.'
+        ], 403);
+    }
+    
     $validated = $request->validate([
         'name' => 'required|string|max:255',
         'email' => 'required|email|unique:users',
