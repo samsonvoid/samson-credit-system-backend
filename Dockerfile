@@ -42,6 +42,8 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo 'echo "Checking startup mode..."' >> /start.sh && \
     echo 'if [ "$USE_LARAVEL_SERVER" = "true" ]; then' >> /start.sh && \
     echo '    echo "Starting Laravel server on port 8080 (Clever Cloud mode)"' >> /start.sh && \
+    echo '    echo "Removing old .env file..."' >> /start.sh && \
+    echo '    rm -f /var/www/.env' >> /start.sh && \
     echo '    echo "Creating .env file from environment variables..."' >> /start.sh && \
     echo '    echo "APP_KEY=${APP_KEY}" > /var/www/.env' >> /start.sh && \
     echo '    echo "APP_ENV=production" >> /var/www/.env' >> /start.sh && \
