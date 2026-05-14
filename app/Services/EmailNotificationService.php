@@ -13,7 +13,7 @@ class EmailNotificationService
     /**
      * Send notification when new credit is issued
      */
-    public static function creditIssued(Credit $credit)
+    public static function creditIssued(Credit $credit, $adminUser = null)
     {
         $customer = $credit->customer;
         
@@ -22,7 +22,7 @@ class EmailNotificationService
             'amount' => number_format($credit->amount),
             'due_date' => $credit->due_date->format('d M Y'),
             'items_count' => $credit->creditItems->count(),
-            'shop_name' => auth()->user()->shop_name ?? 'SVS Credit',
+            'shop_name' => $adminUser ? ($adminUser->shop_name ?? 'SVS Credit') : 'SVS Credit',
         ];
 
         // Email to customer
@@ -31,7 +31,7 @@ class EmailNotificationService
         }
 
         // Email to admin
-        $adminEmail = auth()->user()->email ?? config('mail.from.address');
+        $adminEmail = $adminUser ? ($adminUser->email ?? config('mail.from.address')) : config('mail.from.address');
         self::sendEmail($adminEmail, 'mkopo_notification', $data, 'Mkopo Mpya Umetolewa');
     }
 

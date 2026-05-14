@@ -83,6 +83,7 @@ class CreditApiController extends Controller
             $itemDesc .= ($validated['description'] ?? null) ? " - {$validated['description']}" : "";
             
             Transaction::create([
+                'user_id' => auth('sanctum')->user()?->id ?? $request->user()?->id ?? null,
                 'customer_id' => $customer->id,
                 'type' => 'credit_issued',
                 'amount' => $totalAmount,
@@ -95,9 +96,9 @@ class CreditApiController extends Controller
 
         $credit->load('creditItems.item');
 
-        // Send email notification to customer
+        // Send email notification to customer (async in background)
         try {
-            EmailNotificationService::creditIssued($credit);
+            EmailNotificationService::creditIssued($credit, $request->user());
         } catch (\Exception $e) {
             // Don't fail the operation if email fails
             \Log::error("Failed to send credit email: " . $e->getMessage());
