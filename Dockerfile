@@ -42,7 +42,7 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo 'echo "Checking startup mode..."' >> /start.sh && \
     echo 'if [ "$USE_LARAVEL_SERVER" = "true" ]; then' >> /start.sh && \
     echo '    echo "Starting Laravel server on port 8080 (Clever Cloud mode)"' >> /start.sh && \
-    echo '    echo "Exporting MySQL env vars to override .env..."' >> /start.sh && \
+    echo '    export ADMIN_REGISTRATION_ENABLED=true' >> /start.sh && \
     echo '    export DB_HOST=${MYSQL_ADDON_HOST}' >> /start.sh && \
     echo '    export DB_PORT=${MYSQL_ADDON_PORT}' >> /start.sh && \
     echo '    export DB_DATABASE=${MYSQL_ADDON_DB}' >> /start.sh && \
@@ -57,8 +57,9 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo '    php artisan view:clear' >> /start.sh && \
     echo '    php artisan event:clear' >> /start.sh && \
     echo '    echo "Storage linked successfully"' >> /start.sh && \
-    echo '    echo "Running fresh database migrations..."' >> /start.sh && \
-    echo '    php artisan migrate:fresh --force' >> /start.sh && \
+    echo '    echo "Running database migrations..."' >> /start.sh && \
+    echo '    php artisan migrate --force' >> /start.sh && \
+    echo '    php artisan db:seed --force' >> /start.sh && \
     echo '    php artisan serve --host=0.0.0.0 --port=8080' >> /start.sh && \
     echo 'else' >> /start.sh && \
     echo '    echo "Starting PHP-FPM on port 9000 (Local/Dev mode)"' >> /start.sh && \
