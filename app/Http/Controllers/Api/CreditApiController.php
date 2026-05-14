@@ -96,14 +96,7 @@ class CreditApiController extends Controller
 
         $credit->load('creditItems.item');
 
-        // Send email notification to customer (async in background)
-        try {
-            EmailNotificationService::creditIssued($credit, $request->user());
-        } catch (\Exception $e) {
-            // Don't fail the operation if email fails
-            \Log::error("Failed to send credit email: " . $e->getMessage());
-        }
-
+        // Return immediately, email will be queued for later
         return response()->json([
             'message' => 'Credit issued successfully.',
             'credit_id' => $credit->id,
