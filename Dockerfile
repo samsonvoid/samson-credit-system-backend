@@ -42,28 +42,13 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo 'echo "Checking startup mode..."' >> /start.sh && \
     echo 'if [ "$USE_LARAVEL_SERVER" = "true" ]; then' >> /start.sh && \
     echo '    echo "Starting Laravel server on port 8080 (Clever Cloud mode)"' >> /start.sh && \
-    echo '    echo "Removing old .env file..."' >> /start.sh && \
-    echo '    rm -f /var/www/.env' >> /start.sh && \
-    echo '    echo "Creating .env file from environment variables..."' >> /start.sh && \
-    echo '    echo "APP_KEY=${APP_KEY}" > /var/www/.env' >> /start.sh && \
-    echo '    echo "APP_ENV=production" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "APP_DEBUG=false" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "APP_URL=${APP_URL:-https://cleverapps.io}" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "DB_CONNECTION=mysql" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "DB_HOST=${MYSQL_ADDON_HOST}" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "DB_PORT=${MYSQL_ADDON_PORT}" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "DB_DATABASE=${MYSQL_ADDON_DB}" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "DB_USERNAME=${MYSQL_ADDON_USER}" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "DB_PASSWORD=${MYSQL_ADDON_PASSWORD}" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "CACHE_STORE=${CACHE_STORE:-file}" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "SESSION_DRIVER=file" >> /var/www/.env' >> /start.sh && \
-    echo '    echo "QUEUE_CONNECTION=sync" >> /var/www/.env' >> /start.sh && \
-    echo '    php artisan key:generate --force --no-interaction' >> /start.sh && \
-    echo '    php artisan storage:link' >> /start.sh && \
+    echo '    echo "Clearing Laravel cache to read env vars directly..."' >> /start.sh && \
     echo '    php artisan config:clear' >> /start.sh && \
     echo '    php artisan cache:clear' >> /start.sh && \
     echo '    php artisan route:clear' >> /start.sh && \
     echo '    php artisan view:clear' >> /start.sh && \
+    echo '    php artisan event:clear' >> /start.sh && \
+    echo '    php artisan storage:link' >> /start.sh && \
     echo '    php artisan serve --host=0.0.0.0 --port=8080' >> /start.sh && \
     echo 'else' >> /start.sh && \
     echo '    echo "Starting PHP-FPM on port 9000 (Local/Dev mode)"' >> /start.sh && \
