@@ -530,6 +530,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Create Credit (Mobile API)
     Route::post('/credits', function (Request $request) {
+        $userId = $request->user()->id;
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'amount' => 'required|numeric|min:1',
@@ -538,7 +539,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'description' => 'nullable|string',
         ]);
 
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($validated) {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $userId) {
             $customer = Customer::lockForUpdate()->find($validated['customer_id']);
 
             if (($customer->current_balance + $validated['amount']) > $customer->credit_limit) {
@@ -556,7 +557,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             // Create transaction for circulation (money out - credit issued)
             \App\Models\Transaction::create([
-                'user_id' => $request->user()->id,
+                'user_id' => $userId,
                 'customer_id' => $validated['customer_id'],
                 'type' => 'credit_issued',
                 'circulation_type' => $validated['type'] === 'cash' ? 'CASH' : 'PRODUCT',
