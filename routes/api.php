@@ -385,6 +385,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Customer List (with Pagination for Scalability)
     Route::get('/customers', function (Request $request) {
         $search = $request->input('search');
+        $perPage = $request->input('per_page', 100); // Default 100, can be overridden
         $query = Customer::query();
 
         if ($search) {
@@ -393,7 +394,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
                   ->orWhere('business_name', 'like', "%{$search}%");
         }
 
-        return response()->json($query->orderBy('name')->paginate(15));
+        // If per_page is large (100+), return all without pagination
+        if ($perPage >= 100) {
+            return response()->json([
+                'data' => $query->orderBy('name')->get(),
+                'total' => $query->count()
+            ]);
+        }
+
+        return response()->json($query->orderBy('name')->paginate($perPage));
     });
 
     // Money Circulation (Cash Flow) API
