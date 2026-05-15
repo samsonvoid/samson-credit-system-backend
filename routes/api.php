@@ -655,9 +655,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Create payment initiation record (pending verification)
         $initiation = \App\Models\PaymentInitiation::create([
-
-        // Create payment initiation record (pending verification)
-        $initiation = \App\Models\PaymentInitiation::create([
             'credit_id' => $validated['credit_id'],
             'customer_phone' => $validated['phone'],
             'payment_ref' => $validated['payment_ref'],
@@ -729,7 +726,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         return response()->json(['pending_payments' => $pending]);
     })->middleware('throttle:10,1');
-    });
 
     // Admin Confirm Pending Payment - Rate limited
     Route::post('/payments/admin-confirm', function (Request $request) {
