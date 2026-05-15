@@ -575,7 +575,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 
-    // Record Payment (Mobile API)
+    // Record Payment (Mobile API) - Rate limited: 3 payments per minute per user
     Route::post('/payments', function (Request $request) {
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
@@ -640,10 +640,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
             event(new \App\Events\PaymentReceived($payment));
 
             return response()->json(['message' => 'Payment recorded', 'payment' => $payment], 201);
-        });
+        })->middleware('throttle:3,1');
     });
 
-    // Payment Initiation (Debtor clicks to get payment ref)
+    // Payment Initiation (Debtor clicks to get payment ref) - Rate limited
     Route::post('/payments/initiate', function (Request $request) {
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
@@ -725,9 +725,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->get();
 
         return response()->json(['pending_payments' => $pending]);
+    })->middleware('throttle:10,1');
     });
 
-    // Admin Confirm Pending Payment
+    // Admin Confirm Pending Payment - Rate limited
     Route::post('/payments/admin-confirm', function (Request $request) {
         $validated = $request->validate([
             'pending_payment_id' => 'required|exists:pending_payments,id',
