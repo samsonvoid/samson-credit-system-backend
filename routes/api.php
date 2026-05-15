@@ -575,7 +575,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 
-    // Record Payment (Mobile API) - Rate limited: 3 payments per minute per user
+    // Record Payment (Mobile API) - Rate limited: 1 payment per 30 min per customer
     Route::post('/payments', function (Request $request) {
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
@@ -640,10 +640,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
             event(new \App\Events\PaymentReceived($payment));
 
             return response()->json(['message' => 'Payment recorded', 'payment' => $payment], 201);
-        })->middleware('throttle:3,1');
+        })->middleware('throttle:1,1800'); // 1 payment per 30 minutes
     });
 
-    // Payment Initiation (Debtor clicks to get payment ref) - Rate limited
+    // Payment Initiation (Debtor clicks to get payment ref) - Rate limited: 1 per 30 min
     Route::post('/payments/initiate', function (Request $request) {
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
@@ -652,6 +652,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'payment_ref' => 'required',
             'initiated_at' => 'required',
         ]);
+
+        // Create payment initiation record (pending verification)
+        $initiation = \App\Models\PaymentInitiation::create([
 
         // Create payment initiation record (pending verification)
         $initiation = \App\Models\PaymentInitiation::create([
@@ -668,7 +671,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'payment_ref' => $validated['payment_ref'],
             'initiation_id' => $initiation->id
         ], 200);
-    });
+    })->middleware('throttle:1,1800'); // 1 initiation per 30 minutes
 
     // Confirm Payment (Debtor says "Nimefanya Malipo")
     Route::post('/payments/confirm-initiation', function (Request $request) {
