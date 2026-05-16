@@ -894,7 +894,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             // Create transaction record for circulation
             \App\Models\Transaction::create([
-                'user_id' => $request->user()?->id,
+                'user_id' => null, // Admin confirm - no user_id needed
                 'customer_id' => $credit->customer_id,
                 'type' => 'payment_received',
                 'circulation_type' => 'MPESA',
@@ -914,7 +914,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 
                 // Record credit closure as transaction
                 \App\Models\Transaction::create([
-                    'user_id' => $request->user()?->id,
+                    'user_id' => null, // Admin confirm - no user_id needed
                     'customer_id' => $credit->customer_id,
                     'type' => 'credit_issued',
                     'amount' => $credit->amount,
