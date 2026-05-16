@@ -82,18 +82,16 @@ class CreditApiController extends Controller
             $itemDesc = !empty($validated['items']) ? ' (' . count($validated['items']) . ' items)' : '';
             $itemDesc .= ($validated['description'] ?? null) ? " - {$validated['description']}" : "";
             
-            // Only set user_id if authenticated user is actually a User (admin), not a Customer
-            $authenticatedUser = $request->user();
-            $userId = ($authenticatedUser && get_class($authenticatedUser) === 'App\\Models\\User') 
-                ? $authenticatedUser->id 
-                : null;
-            
+            // For customer-facing credit creation, user_id is always NULL
+            // Admin credits are handled by web routes with proper user context
             Transaction::create([
-                'user_id' => $userId, // NULL if customer, actual ID if admin
+                'user_id' => null, // Always null for API credit creation
                 'customer_id' => $customer->id,
                 'type' => 'credit_issued',
                 'amount' => $totalAmount,
                 'reference_id' => $credit->id,
+                'circulation_type' => !empty($validated['items']) ? 'PRODUCT' : 'CASH',
+                'direction' => 'out',
                 'description' => "MKOPO WA {$validated['type']}{$itemDesc}",
             ]);
 
