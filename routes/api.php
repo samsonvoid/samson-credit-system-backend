@@ -662,6 +662,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'initiated_at' => 'required',
         ]);
 
+        // Check if customer already has a pending payment initiation (prevent duplicates)
+        $existingPending = \App\Models\PaymentInitiation::where('credit_id', $validated['credit_id'])
+            ->whereIn('status', ['pending_verification', 'awaiting_admin_confirmation'])
+            ->first();
+        
+        if ($existingPending) {
+            return response()->json([
+                'error' => 'Unayo malipo yanayosubiri tayari. Subiri uthibitisho au dakika 30 kabla ya kujaribu tena.',
+                'existing_ref' => $existingPending->payment_ref
+            ], 429);
+        }
+
         // Create payment initiation record (pending verification)
         $initiation = \App\Models\PaymentInitiation::create([
             'credit_id' => $validated['credit_id'],
@@ -725,7 +737,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'message' => 'Payment confirmed. Awaiting admin verification.',
             'status' => 'pending_admin_confirmation'
         ], 200);
-    });
+    })->middleware('throttle:1,1800'); // 1 per 30 min
 
     // Get Pending Payments (Admin view)
     Route::get('/payments/pending', function () {
