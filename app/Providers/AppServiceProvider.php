@@ -34,24 +34,31 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
-        RateLimiter::for('payment-limit', function (Request $request) {
-            return Limit::perMinute(1)->by($request->user()?->id ?: $request->ip());
+        RateLimiter::for('payment-initiate', function (Request $request) {
+            return Limit::perMinute(5)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('payment-confirm', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
         });
     }
 
-    public static function checkPaymentRateLimit(Request $request): ?\Illuminate\Http\JsonResponse
+    public static function checkPaymentRateLimit(Request $request, string $type = 'initiate'): ?\Illuminate\Http\JsonResponse
     {
-        $key = 'payment:' . ($request->user()?->id ?: $request->ip());
+        $limiterKey = 'payment:' . $type . ':' . ($request->user()?->id ?: $request->ip());
         
-        if (RateLimiter::tooManyAttempts($key, 1)) {
-            $retryAfter = RateLimiter::availableIn($key);
+        if (RateLimiter::tooManyAttempts($limiterKey, $type === 'initiate' ? 5 : 10)) {
+            $retryAfter = RateLimiter::availableIn($limiterKey);
             return response()->json([
-                'error' => 'Umefikia kikomo cha malipo. Subiri dakika 30 kabla ya kujaribu tena.',
+                'error' => 'Umefanya majaribio mengi sana. Subiri sekunde ' . $retryAfter . ' kabla ya kujaribu tena.',
                 'retry_after' => $retryAfter
-            ], 429);
+            ], 429)->withHeaders([
+                'Retry-After' => $retryAfter,
+                'Content-Type' => 'application/json'
+            ]);
         }
         
-        RateLimiter::hit($key, 1800); // 30 minutes
+        RateLimiter::hit($limiterKey, 60); // Decay 60 seconds
         return null;
     }
 }

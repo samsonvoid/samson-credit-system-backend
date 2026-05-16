@@ -260,8 +260,11 @@ Route::middleware(['auth:sanctum', 'role:customer'])->get('/portal/me', function
 // Protected API (Sanctum - Admin only by default or general)
 Route::middleware(['auth:sanctum'])->group(function () {
     
-    // Customer: Record Payment Request (Manual M-Pesa) - No rate limit
+    // Customer: Record Payment Request (Manual M-Pesa) - 10 requests per minute
     Route::post('/payments', function (Request $request) {
+        $rateLimit = \App\Providers\AppServiceProvider::checkPaymentRateLimit($request, 'confirm');
+        if ($rateLimit) return $rateLimit;
+        
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
             'amount' => 'required|numeric|min:100',
@@ -652,8 +655,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 
-    // Payment Initiation (Debtor clicks to get payment ref) - Remove rate limit, only check duplicates
+    // Payment Initiation (Debtor clicks to get payment ref) - 5 requests per minute
     Route::post('/payments/initiate', function (Request $request) {
+        $rateLimit = \App\Providers\AppServiceProvider::checkPaymentRateLimit($request, 'initiate');
+        if ($rateLimit) return $rateLimit;
+        
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
             'amount' => 'required|numeric|min:1',
@@ -672,7 +678,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'error' => 'Una malipo yanayosubiri tayari kwa mkopo huu. Usipatie tena hadi admin awerekebishe.',
                 'existing_ref' => $existingPending->payment_ref,
                 'existing_status' => $existingPending->status
-            ], 409); // 409 Conflict instead of 429
+            ], 409);
         }
 
         // Create payment initiation record (pending verification)
@@ -692,8 +698,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ], 200);
     });
 
-    // Confirm Payment (Debtor says "Nimefanya Malipo") - No rate limit, just check duplicates
+    // Confirm Payment (Debtor says "Nimefanya Malipo") - 10 requests per minute
     Route::post('/payments/confirm-initiation', function (Request $request) {
+        $rateLimit = \App\Providers\AppServiceProvider::checkPaymentRateLimit($request, 'confirm');
+        if ($rateLimit) return $rateLimit;
+        
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
             'payment_ref' => 'required',
