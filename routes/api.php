@@ -260,11 +260,8 @@ Route::middleware(['auth:sanctum', 'role:customer'])->get('/portal/me', function
 // Protected API (Sanctum - Admin only by default or general)
 Route::middleware(['auth:sanctum'])->group(function () {
     
-    // Customer: Record Payment Request (Manual M-Pesa)
+    // Customer: Record Payment Request (Manual M-Pesa) - No rate limit
     Route::post('/payments', function (Request $request) {
-        $rateLimit = \App\Providers\AppServiceProvider::checkPaymentRateLimit($request);
-        if ($rateLimit) return $rateLimit;
-        
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
             'amount' => 'required|numeric|min:100',
@@ -587,7 +584,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 
-    // Record Payment (Mobile API) - Rate limited: 1 payment per 30 min per customer
+    // Record Payment (Mobile API) - No rate limit
     Route::post('/payments', function (Request $request) {
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
@@ -655,11 +652,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 
-    // Payment Initiation (Debtor clicks to get payment ref) - Rate limited: 1 per 30 min
+    // Payment Initiation (Debtor clicks to get payment ref) - Remove rate limit, only check duplicates
     Route::post('/payments/initiate', function (Request $request) {
-        $rateLimit = \App\Providers\AppServiceProvider::checkPaymentRateLimit($request);
-        if ($rateLimit) return $rateLimit;
-        
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
             'amount' => 'required|numeric|min:1',
@@ -675,9 +669,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         
         if ($existingPending) {
             return response()->json([
-                'error' => 'Unayo malipo yanayosubiri tayari. Subiri uthibitisho au dakika 30 kabla ya kujaribu tena.',
-                'existing_ref' => $existingPending->payment_ref
-            ], 429);
+                'error' => 'Una malipo yanayosubiri tayari kwa mkopo huu. Usipatie tena hadi admin awerekebishe.',
+                'existing_ref' => $existingPending->payment_ref,
+                'existing_status' => $existingPending->status
+            ], 409); // 409 Conflict instead of 429
         }
 
         // Create payment initiation record (pending verification)
@@ -697,17 +692,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ], 200);
     });
 
-    // Confirm Payment (Debtor says "Nimefanya Malipo")
+    // Confirm Payment (Debtor says "Nimefanya Malipo") - No rate limit, just check duplicates
     Route::post('/payments/confirm-initiation', function (Request $request) {
-        $rateLimit = \App\Providers\AppServiceProvider::checkPaymentRateLimit($request);
-        if ($rateLimit) return $rateLimit;
-        
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
             'payment_ref' => 'required',
             'initiated_at' => 'required',
             'amount' => 'required|numeric|min:1',
         ]);
+
+        // Check if this payment ref is already confirmed
+        $existingConfirmed = \App\Models\PendingPayment::where('payment_ref', $validated['payment_ref'])
+            ->where('credit_id', $validated['credit_id'])
+            ->where('status', 'confirmed')
+            ->first();
+        
+        if ($existingConfirmed) {
+            return response()->json([
+                'error' => 'Malipo haya tayari yamethibitishwa na admin.',
+                'status' => 'already_confirmed'
+            ], 409);
+        }
 
         // Find or create pending payment
         $initiation = \App\Models\PaymentInitiation::where('payment_ref', $validated['payment_ref'])
@@ -740,6 +745,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'initiated_at' => $validated['initiated_at'],
             'confirmed_at' => now(),
             'customer_phone' => $initiation->customer_phone ?? 'unknown',
+            'status' => 'pending',
         ]);
 
         return response()->json([
