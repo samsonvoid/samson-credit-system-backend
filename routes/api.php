@@ -22,6 +22,32 @@ Route::get('/health', function () {
     return response()->json(['status' => 'online', 'timestamp' => now()]);
 });
 
+// DEV: Reset all payment cooldowns and rate limits (for testing)
+Route::post('/dev/reset-payment-limits', function () {
+    $customers = \App\Models\Customer::select('id')->get();
+    foreach ($customers as $customer) {
+        Cache::forget('payment_cooldown:' . $customer->id);
+    }
+    
+    Cache::forget('ratelimit:payment:initiate');
+    Cache::forget('ratelimit:payment:confirm');
+    
+    return response()->json([
+        'message' => 'All payment limits reset for ' . count($customers) . ' customers',
+        'timestamp' => now()
+    ]);
+});
+
+// DEV: Reset cooldown for specific customer
+Route::post('/dev/reset-cooldown/{customerId}', function ($customerId) {
+    Cache::forget('payment_cooldown:' . $customerId);
+    
+    return response()->json([
+        'message' => 'Cooldown reset for customer ' . $customerId,
+        'timestamp' => now()
+    ]);
+});
+
 Route::get('/reports/circulation', [App\Http\Controllers\CirculationController::class, 'getStats'])->middleware('auth:sanctum');
 Route::get('/reports/debtors', [App\Http\Controllers\ReportController::class, 'getDebtorsReport'])->middleware('auth:sanctum');
 Route::get('/reports/download-pdf', [App\Http\Controllers\ReportController::class, 'downloadPdfReport'])->middleware('auth:sanctum');
