@@ -856,79 +856,91 @@ Route::middleware(['auth:sanctum'])->group(function () {
         return response()->json(['pending_payments' => $pending]);
     })->middleware('throttle:10,1');
 
-    // Admin Confirm Pending Payment - Rate limited
+    // Admin Confirm Pending Payment
     Route::post('/payments/admin-confirm', function (Request $request) {
-        $validated = $request->validate([
-            'pending_payment_id' => 'required|exists:pending_payments,id',
-        ]);
-
-        $pending = \App\Models\PendingPayment::find($validated['pending_payment_id']);
-
-        if (!$pending || $pending->status !== 'pending') {
-            return response()->json(['message' => 'Payment already processed'], 422);
-        }
-
-        $credit = Credit::with('customer')->find($pending->credit_id);
-
-        // Create actual payment
-        $payment = \App\Models\Payment::create([
-            'credit_id' => $pending->credit_id,
-            'amount_paid' => $pending->amount,
-            'payment_date' => now()->toDateString(),
-            'method' => 'mpesa',
-            'mpesa_code' => $pending->payment_ref,
-        ]);
-
-        // Create transaction record for circulation
-        \App\Models\Transaction::create([
-            'user_id' => $request->user()->id,
-            'customer_id' => $credit->customer_id,
-            'type' => 'payment_received',
-            'circulation_type' => 'MPESA',
-            'amount' => $pending->amount,
-            'direction' => 'in',
-            'description' => 'Malipo ya deni - ' . $pending->payment_ref,
-        ]);
-
-        // Update customer balance - decrement
-        $credit->customer->current_balance = max(0, $credit->customer->current_balance - $pending->amount);
-        $credit->customer->save();
-
-        // Update credit status if fully paid
-        $totalPaid = \App\Models\Payment::where('credit_id', $credit->id)->sum('amount_paid');
-        if ($totalPaid >= $credit->amount) {
-            $credit->update(['status' => 'closed']);
-            
-            // Record credit closure as transaction (money out)
-            \App\Models\Transaction::create([
-                'user_id' => $request->user()->id,
-                'customer_id' => $credit->customer_id,
-                'type' => 'credit_issued',
-                'amount' => $credit->amount,
-                'direction' => 'out',
-                'description' => 'Mkopo: ' . $credit->description,
-            ]);
-        }
-
-        // Mark pending as confirmed
-        $pending->update(['status' => 'confirmed', 'confirmed_at' => now()]);
-
-        // Clear all related caches
-        \Illuminate\Support\Facades\Cache::forget('dashboard_metrics');
-        \Illuminate\Support\Facades\Cache::forget('portal_customer_' . $credit->customer_id);
-
-        // Send email
         try {
-            \App\Services\EmailNotificationService::paymentReceived($payment, $credit);
-        } catch (\Exception $e) {
-            \Log::error("Email failed: " . $e->getMessage());
-        }
+            $validated = $request->validate([
+                'pending_payment_id' => 'required|exists:pending_payments,id',
+            ]);
 
-        return response()->json([
-            'message' => 'Payment confirmed successfully',
-            'payment' => $payment,
-            'new_balance' => $credit->customer->fresh()->current_balance
-        ], 200);
+            $pending = \App\Models\PendingPayment::find($validated['pending_payment_id']);
+
+            if (!$pending || $pending->status !== 'pending') {
+                return response()->json(['message' => 'Payment already processed'], 422);
+            }
+
+            $credit = Credit::with('customer')->find($pending->credit_id);
+
+            if (!$credit || !$credit->customer) {
+                return response()->json(['message' => 'Credit or customer not found'], 422);
+            }
+
+            // Create actual payment
+            $payment = \App\Models\Payment::create([
+                'credit_id' => $pending->credit_id,
+                'amount_paid' => $pending->amount,
+                'payment_date' => now()->toDateString(),
+                'method' => 'mpesa',
+                'mpesa_code' => $pending->payment_ref,
+            ]);
+
+            // Create transaction record for circulation
+            \App\Models\Transaction::create([
+                'user_id' => $request->user()?->id,
+                'customer_id' => $credit->customer_id,
+                'type' => 'payment_received',
+                'circulation_type' => 'MPESA',
+                'amount' => $pending->amount,
+                'direction' => 'in',
+                'description' => 'Malipo ya deni - ' . $pending->payment_ref,
+            ]);
+
+            // Update customer balance - decrement
+            $credit->customer->current_balance = max(0, $credit->customer->current_balance - $pending->amount);
+            $credit->customer->save();
+
+            // Update credit status if fully paid
+            $totalPaid = \App\Models\Payment::where('credit_id', $credit->id)->sum('amount_paid');
+            if ($totalPaid >= $credit->amount) {
+                $credit->update(['status' => 'closed']);
+                
+                // Record credit closure as transaction
+                \App\Models\Transaction::create([
+                    'user_id' => $request->user()?->id,
+                    'customer_id' => $credit->customer_id,
+                    'type' => 'credit_issued',
+                    'amount' => $credit->amount,
+                    'direction' => 'out',
+                    'description' => 'Mkopo: ' . ($credit->description ?? 'Deni'),
+                ]);
+            }
+
+            // Mark pending as confirmed
+            $pending->update(['status' => 'confirmed', 'confirmed_at' => now()]);
+
+            // Clear all related caches
+            \Illuminate\Support\Facades\Cache::forget('dashboard_metrics');
+            \Illuminate\Support\Facades\Cache::forget('portal_customer_' . $credit->customer_id);
+
+            // Send email (non-blocking)
+            try {
+                \App\Services\EmailNotificationService::paymentReceived($payment, $credit);
+            } catch (\Exception $e) {
+                \Log::error("Email failed: " . $e->getMessage());
+            }
+
+            return response()->json([
+                'message' => 'Payment confirmed successfully',
+                'payment' => $payment,
+                'new_balance' => $credit->customer->fresh()->current_balance
+            ], 200);
+        } catch (\Exception $e) {
+            \Log::error("Admin confirm payment failed: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Payment confirmation failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     });
 
     // Admin Reject Pending Payment
