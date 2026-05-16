@@ -48,6 +48,19 @@ Route::post('/dev/reset-cooldown/{customerId}', function ($customerId) {
     ]);
 });
 
+// DEV: Clear ALL pending payment records (for testing)
+Route::post('/dev/clear-pending-payments', function () {
+    $initiationCount = \App\Models\PaymentInitiation::whereIn('status', ['pending_verification', 'awaiting_admin_confirmation'])->delete();
+    $pendingCount = \App\Models\PendingPayment::where('status', 'pending')->update(['status' => 'cleared']);
+    
+    return response()->json([
+        'message' => 'Cleared ' . $initiationCount . ' payment initiations and ' . $pendingCount . ' pending payments',
+        'initiations_deleted' => $initiationCount,
+        'pending_updated' => $pendingCount,
+        'timestamp' => now()
+    ]);
+});
+
 Route::get('/reports/circulation', [App\Http\Controllers\CirculationController::class, 'getStats'])->middleware('auth:sanctum');
 Route::get('/reports/debtors', [App\Http\Controllers\ReportController::class, 'getDebtorsReport'])->middleware('auth:sanctum');
 Route::get('/reports/download-pdf', [App\Http\Controllers\ReportController::class, 'downloadPdfReport'])->middleware('auth:sanctum');
