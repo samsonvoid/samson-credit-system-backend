@@ -288,7 +288,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'message' => 'Malipo yameandikishwa. Utaarifiwa baada ya kuthibitishwa.',
             'payment' => $payment
         ], 201);
-    })->middleware('throttle:1,1800'); // 1 payment per 30 minutes
+    })->middleware('throttle:payment-limit'); // 1 payment per 30 min
 
     // Customer: Get Payment History
     Route::get('/payments/history', function (Request $request) {
@@ -650,7 +650,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             return response()->json(['message' => 'Payment recorded', 'payment' => $payment], 201);
         });
-    })->middleware('throttle:1,1800'); // 1 payment per 30 minutes
+    })->middleware('throttle:payment-limit'); // 1 payment per 30 min
 
     // Payment Initiation (Debtor clicks to get payment ref) - Rate limited: 1 per 30 min
     Route::post('/payments/initiate', function (Request $request) {
@@ -689,7 +689,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'payment_ref' => $validated['payment_ref'],
             'initiation_id' => $initiation->id
         ], 200);
-    })->middleware('throttle:1,1800'); // 1 initiation per 30 minutes
+    })->middleware('throttle:payment-limit'); // 1 initiation per 30 min
 
     // Confirm Payment (Debtor says "Nimefanya Malipo")
     Route::post('/payments/confirm-initiation', function (Request $request) {
@@ -737,7 +737,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'message' => 'Payment confirmed. Awaiting admin verification.',
             'status' => 'pending_admin_confirmation'
         ], 200);
-    })->middleware('throttle:1,1800'); // 1 per 30 min
+    })->middleware('throttle:payment-limit'); // 1 per 30 min
 
     // Get Pending Payments (Admin view)
     Route::get('/payments/pending', function () {
