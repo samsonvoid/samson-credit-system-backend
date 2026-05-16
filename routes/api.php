@@ -61,6 +61,38 @@ Route::post('/dev/clear-pending-payments', function () {
     ]);
 });
 
+// DEV: Full reset - clears cooldowns AND rate limits
+Route::post('/dev/full-reset', function () {
+    // Clear all payment cooldowns
+    $customers = \App\Models\Customer::select('id')->get();
+    foreach ($customers as $customer) {
+        Cache::forget('payment_cooldown:' . $customer->id);
+    }
+    
+    // Clear all rate limiter entries for payment endpoints
+    $rateLimitKeys = [];
+    foreach ($customers as $customer) {
+        $rateLimitKeys[] = 'payment:initiate:' . $customer->id;
+        $rateLimitKeys[] = 'payment:confirm:' . $customer->id;
+        // Also clear Laravel's internal rate limiter cache
+        Cache::forget('rate_limiter:payment:initiate:' . $customer->id);
+        Cache::forget('rate_limiter:payment:confirm:' . $customer->id);
+    }
+    
+    // Clear pending payment records too
+    $initiationCount = \App\Models\PaymentInitiation::whereIn('status', ['pending_verification', 'awaiting_admin_confirmation'])->delete();
+    $pendingCount = \App\Models\PendingPayment::where('status', 'pending')->update(['status' => 'cleared']);
+    
+    return response()->json([
+        'message' => 'Full reset complete for ' . count($customers) . ' customers',
+        'cooldowns_cleared' => count($customers),
+        'rate_limits_cleared' => count($rateLimitKeys),
+        'pending_initiations_deleted' => $initiationCount,
+        'pending_payments_cleared' => $pendingCount,
+        'timestamp' => now()
+    ]);
+});
+
 Route::get('/reports/circulation', [App\Http\Controllers\CirculationController::class, 'getStats'])->middleware('auth:sanctum');
 Route::get('/reports/debtors', [App\Http\Controllers\ReportController::class, 'getDebtorsReport'])->middleware('auth:sanctum');
 Route::get('/reports/download-pdf', [App\Http\Controllers\ReportController::class, 'downloadPdfReport'])->middleware('auth:sanctum');

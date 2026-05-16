@@ -89,6 +89,25 @@ class AppServiceProvider extends ServiceProvider
         return null;
     }
 
+    public static function resetAllLimits(): void
+    {
+        // Clear all customer cooldowns
+        $customers = \App\Models\Customer::select('id')->get();
+        foreach ($customers as $customer) {
+            Cache::forget('payment_cooldown:' . $customer->id);
+            // Clear rate limiter hits
+            Cache::forget('payment:initiate:' . $customer->id);
+            Cache::forget('payment:confirm:' . $customer->id);
+        }
+    }
+
+    public static function clearCustomerCooldown(int $customerId): void
+    {
+        Cache::forget('payment_cooldown:' . $customerId);
+        Cache::forget('payment:initiate:' . $customerId);
+        Cache::forget('payment:confirm:' . $customerId);
+    }
+
     public static function set30MinCooldown(Request $request): void
     {
         $userId = $request->user()?->id;
