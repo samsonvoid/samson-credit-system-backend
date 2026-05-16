@@ -6,7 +6,6 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
-use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,13 +35,23 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('payment-limit', function (Request $request) {
-            $key = $request->user()?->id ?: $request->ip();
-            $remaining = RateLimiter::remaining('payment:' . $key, 1, 1800);
-            if ($remaining < 1) {
-                $retryAfter = RateLimiter::availableIn('payment:' . $key);
-                throw new TooManyRequestsHttpException($retryAfter, 'Umefikia kikomo cha malipo. Subiri dakika 30 kabla ya kujaribu tena.');
-            }
-            return Limit::perMinute(2)->by($key);
+            return Limit::perMinute(1)->by($request->user()?->id ?: $request->ip());
         });
+    }
+
+    public static function checkPaymentRateLimit(Request $request): ?\Illuminate\Http\JsonResponse
+    {
+        $key = 'payment:' . ($request->user()?->id ?: $request->ip());
+        
+        if (RateLimiter::tooManyAttempts($key, 1)) {
+            $retryAfter = RateLimiter::availableIn($key);
+            return response()->json([
+                'error' => 'Umefikia kikomo cha malipo. Subiri dakika 30 kabla ya kujaribu tena.',
+                'retry_after' => $retryAfter
+            ], 429);
+        }
+        
+        RateLimiter::hit($key, 1800); // 30 minutes
+        return null;
     }
 }
