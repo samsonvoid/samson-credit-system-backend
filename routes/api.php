@@ -865,14 +865,22 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             $pending = \App\Models\PendingPayment::find($validated['pending_payment_id']);
 
-            if (!$pending || $pending->status !== 'pending') {
-                return response()->json(['message' => 'Payment already processed'], 422);
+            if (!$pending) {
+                return response()->json(['message' => 'Pending payment not found', 'id' => $validated['pending_payment_id']], 422);
             }
 
-            $credit = Credit::with('customer')->find($pending->credit_id);
+            if ($pending->status !== 'pending') {
+                return response()->json(['message' => 'Payment already processed', 'status' => $pending->status], 422);
+            }
 
-            if (!$credit || !$credit->customer) {
-                return response()->json(['message' => 'Credit or customer not found'], 422);
+            $credit = \App\Models\Credit::with('customer')->find($pending->credit_id);
+
+            if (!$credit) {
+                return response()->json(['message' => 'Credit not found', 'credit_id' => $pending->credit_id], 422);
+            }
+
+            if (!$credit->customer) {
+                return response()->json(['message' => 'Customer not found for this credit'], 422);
             }
 
             // Create actual payment
@@ -922,23 +930,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
             \Illuminate\Support\Facades\Cache::forget('dashboard_metrics');
             \Illuminate\Support\Facades\Cache::forget('portal_customer_' . $credit->customer_id);
 
-            // Send email (non-blocking)
-            try {
-                \App\Services\EmailNotificationService::paymentReceived($payment, $credit);
-            } catch (\Exception $e) {
-                \Log::error("Email failed: " . $e->getMessage());
-            }
-
             return response()->json([
                 'message' => 'Payment confirmed successfully',
-                'payment' => $payment,
+                'payment_id' => $payment->id,
                 'new_balance' => $credit->customer->fresh()->current_balance
             ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            \Log::error("Admin confirm payment failed: " . $e->getMessage());
+            \Log::error("Admin confirm payment failed: " . $e->getMessage() . " | Line: " . $e->getLine() . " | File: " . $e->getFile());
             return response()->json([
                 'message' => 'Payment confirmation failed',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'line' => $e->getLine()
             ], 500);
         }
     });
