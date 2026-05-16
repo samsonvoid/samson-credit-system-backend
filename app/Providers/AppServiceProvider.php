@@ -58,7 +58,43 @@ class AppServiceProvider extends ServiceProvider
             ]);
         }
         
-        RateLimiter::hit($limiterKey, 60); // Decay 60 seconds
+        RateLimiter::hit($limiterKey, 60);
         return null;
+    }
+
+    public static function check30MinCooldown(Request $request): ?\Illuminate\Http\JsonResponse
+    {
+        $userId = $request->user()?->id;
+        if (!$userId) return null;
+        
+        $key = 'payment_cooldown:' . $userId;
+        $lastConfirmed = \Illuminate\Support\Facades\Cache::get($key);
+        
+        if ($lastConfirmed) {
+            $secondsPassed = now()->diffInSeconds($lastConfirmed);
+            $secondsRemaining = max(0, 1800 - $secondsPassed); // 30 minutes
+            
+            if ($secondsRemaining > 0) {
+                return response()->json([
+                    'error' => 'Umeshatuma ombi la malipo. Subiri dakika ' . ceil($secondsRemaining / 60) . ' kabla ya kutuma ombi jingine.',
+                    'cooldown_remaining' => $secondsRemaining,
+                    'can_retry_at' => now()->addSeconds($secondsRemaining)->toIso8601String()
+                ], 429)->withHeaders([
+                    'Retry-After' => $secondsRemaining,
+                    'Content-Type' => 'application/json'
+                ]);
+            }
+        }
+        
+        return null;
+    }
+
+    public static function set30MinCooldown(Request $request): void
+    {
+        $userId = $request->user()?->id;
+        if ($userId) {
+            $key = 'payment_cooldown:' . $userId;
+            \Illuminate\Support\Facades\Cache::put($key, now(), 1800); // 30 minutes
+        }
     }
 }

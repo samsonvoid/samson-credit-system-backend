@@ -655,10 +655,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 
-    // Payment Initiation (Debtor clicks to get payment ref) - 5 requests per minute
+    // Payment Initiation (Debtor clicks to get payment ref) - 5 requests per minute + 30min cooldown
     Route::post('/payments/initiate', function (Request $request) {
         $rateLimit = \App\Providers\AppServiceProvider::checkPaymentRateLimit($request, 'initiate');
         if ($rateLimit) return $rateLimit;
+        
+        $cooldownCheck = \App\Providers\AppServiceProvider::check30MinCooldown($request);
+        if ($cooldownCheck) return $cooldownCheck;
         
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
@@ -694,14 +697,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
         return response()->json([
             'message' => 'Payment initiated',
             'payment_ref' => $validated['payment_ref'],
-            'initiation_id' => $initiation->id
+            'initiation_id' => $initiation->id,
+            'cooldown_active' => true,
+            'cooldown_expires_in' => 1800
         ], 200);
     });
 
-    // Confirm Payment (Debtor says "Nimefanya Malipo") - 10 requests per minute
+    // Confirm Payment (Debtor says "Nimefanya Malipo") - 10 requests per minute + 30min cooldown
     Route::post('/payments/confirm-initiation', function (Request $request) {
         $rateLimit = \App\Providers\AppServiceProvider::checkPaymentRateLimit($request, 'confirm');
         if ($rateLimit) return $rateLimit;
+        
+        $cooldownCheck = \App\Providers\AppServiceProvider::check30MinCooldown($request);
+        if ($cooldownCheck) return $cooldownCheck;
         
         $validated = $request->validate([
             'credit_id' => 'required|exists:credits,id',
@@ -757,9 +765,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'status' => 'pending',
         ]);
 
+        // Set 30-minute cooldown after successful confirmation
+        \App\Providers\AppServiceProvider::set30MinCooldown($request);
+
         return response()->json([
             'message' => 'Payment confirmed. Awaiting admin verification.',
-            'status' => 'pending_admin_confirmation'
+            'status' => 'pending_admin_confirmation',
+            'cooldown_active' => true,
+            'cooldown_expires_in' => 1800
         ], 200);
     });
 
@@ -817,6 +830,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             
             // Record credit closure as transaction (money out)
             \App\Models\Transaction::create([
+                'user_id' => $request->user()->id,
                 'customer_id' => $credit->customer_id,
                 'type' => 'credit_issued',
                 'amount' => $credit->amount,
