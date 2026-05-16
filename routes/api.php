@@ -569,7 +569,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             // Create transaction for circulation (money out - credit issued)
             \App\Models\Transaction::create([
-                'user_id' => $userId,
+                'user_id' => null, // API credits don't have admin user
                 'customer_id' => $validated['customer_id'],
                 'type' => 'credit_issued',
                 'circulation_type' => $validated['type'] === 'cash' ? 'CASH' : 'PRODUCT',
@@ -612,7 +612,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             // Create transaction for circulation
             \App\Models\Transaction::create([
-                'user_id' => $credit->customer->id,
+                'user_id' => null, // API credits don't have admin user
                 'customer_id' => $credit->customer_id,
                 'type' => 'payment_received',
                 'circulation_type' => strtoupper($validated['method']),
@@ -628,7 +628,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 
                 // Record credit closure
                 \App\Models\Transaction::create([
-                    'user_id' => $credit->customer_id,
+                    'user_id' => null,
                     'customer_id' => $credit->customer_id,
                     'type' => 'credit_closed',
                     'circulation_type' => 'SETTLEMENT',
