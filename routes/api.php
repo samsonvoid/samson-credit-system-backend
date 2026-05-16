@@ -288,7 +288,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'message' => 'Malipo yameandikishwa. Utaarifiwa baada ya kuthibitishwa.',
             'payment' => $payment
         ], 201);
-    });
+    })->middleware('throttle:1,1800'); // 1 payment per 30 minutes
 
     // Customer: Get Payment History
     Route::get('/payments/history', function (Request $request) {
@@ -649,8 +649,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             event(new \App\Events\PaymentReceived($payment));
 
             return response()->json(['message' => 'Payment recorded', 'payment' => $payment], 201);
-        })->middleware('throttle:1,1800'); // 1 payment per 30 minutes
-    });
+        });
+    })->middleware('throttle:1,1800'); // 1 payment per 30 minutes
 
     // Payment Initiation (Debtor clicks to get payment ref) - Rate limited: 1 per 30 min
     Route::post('/payments/initiate', function (Request $request) {
