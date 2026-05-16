@@ -82,8 +82,14 @@ class CreditApiController extends Controller
             $itemDesc = !empty($validated['items']) ? ' (' . count($validated['items']) . ' items)' : '';
             $itemDesc .= ($validated['description'] ?? null) ? " - {$validated['description']}" : "";
             
+            // Only set user_id if authenticated user is actually a User (admin), not a Customer
+            $authenticatedUser = $request->user();
+            $userId = ($authenticatedUser && get_class($authenticatedUser) === 'App\\Models\\User') 
+                ? $authenticatedUser->id 
+                : null;
+            
             Transaction::create([
-                'user_id' => auth('sanctum')->user()?->id ?? $request->user()?->id ?? null,
+                'user_id' => $userId, // NULL if customer, actual ID if admin
                 'customer_id' => $customer->id,
                 'type' => 'credit_issued',
                 'amount' => $totalAmount,
